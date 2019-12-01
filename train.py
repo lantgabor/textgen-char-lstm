@@ -128,7 +128,7 @@ print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
 
 history = model.fit(x, y,
           batch_size=128,
-          epochs=1,
+          epochs=20,
           callbacks=[print_callback, checkpointer, early_stopping],verbose=1, validation_split=0.2)
 
 # plot train and validation loss

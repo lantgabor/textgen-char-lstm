@@ -6,7 +6,9 @@ import re
 import random
 
 # Open the train data csv file
-with open('./data/politics.csv', 'r', encoding='UTF8') as fp:
+from matplotlib import pyplot
+
+with open('./data/hackernews.csv', 'r', encoding='UTF8') as fp:
     reader = csv.reader(fp)
 
     # Remove unwanted symbols from the text
@@ -63,13 +65,20 @@ from keras.callbacks import LambdaCallback
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from keras.optimizers import RMSprop
+from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint
+
+patience=5
+early_stopping=EarlyStopping(patience=patience, verbose=1)
+
+checkpointer=ModelCheckpoint(filepath='weights.hdf5', save_best_only=True, verbose=1)
 
 # LSTM model generates text charcacter by character
 model = Sequential()
 model.add(LSTM(128, input_shape=(maxlen, len(chars))))
 model.add(Dense(len(chars), activation='softmax'))
 optimizer = RMSprop(lr=0.01)
-model.compile(loss='categorical_crossentropy', optimizer=optimizer)
+model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
 model.summary()
 
@@ -86,21 +95,19 @@ def sample(preds, temperature=1.0):
     return np.argmax(probas)
 
 def on_epoch_end(epoch, _):
-    # Function invoked at end of each epoch. Prints generated text.
-    print("****************************************************************************")
-    print('----- Generating text after Epoch: %d' % epoch)
+    print('Generating text after Epoch: %d' % epoch)
 
     start_index = random.randint(0, len(text) - maxlen - 1)
-    for temperature in [0.2, 0.5, 1.0, 1.2]:
-        print('----- temperature:', temperature)
+    for temperature in [0.2, 0.5, 1.0]:
+        print('temperature:', temperature)
 
         generated = ''
         sentence = text[start_index: start_index + maxlen]
         generated += sentence
-        print('----- Generating with seed: "' + sentence + '"')
+        print('Generating with seed: "' + sentence + '"')
         sys.stdout.write(generated)
 
-        for i in range(400):
+        for i in range(40):
             x_pred = np.zeros((1, maxlen, len(chars)))
             for t, char in enumerate(sentence):
                 x_pred[0, t, char_indices[char]] = 1.
@@ -119,7 +126,16 @@ def on_epoch_end(epoch, _):
 # Fit the model
 print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
 
-model.fit(x, y,
+history = model.fit(x, y,
           batch_size=128,
-          epochs=60,
-          callbacks=[print_callback])
+          epochs=1,
+          callbacks=[print_callback, checkpointer, early_stopping],verbose=1, validation_split=0.2)
+
+# plot train and validation loss
+pyplot.plot(history.history['loss'][500:])
+pyplot.plot(history.history['val_loss'][500:])
+pyplot.title('model train vs validation loss')
+pyplot.ylabel('loss')
+pyplot.xlabel('epoch')
+pyplot.legend(['train', 'validation'], loc='upper right')
+pyplot.show()

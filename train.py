@@ -8,7 +8,7 @@ import random
 # Open the train data csv file
 from matplotlib import pyplot
 
-with open('./data/hackernews.csv', 'r', encoding='UTF8') as fp:
+with open('./data/politics.csv', 'r', encoding='UTF8') as fp:
     reader = csv.reader(fp)
 
     # Remove unwanted symbols from the text
@@ -128,12 +128,12 @@ print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
 
 history = model.fit(x, y,
           batch_size=128,
-          epochs=20,
+          epochs=25,
           callbacks=[print_callback, checkpointer, early_stopping],verbose=1, validation_split=0.2)
 
 # plot train and validation loss
-pyplot.plot(history.history['loss'][500:])
-pyplot.plot(history.history['val_loss'][500:])
+pyplot.plot(history.history['loss'][:])
+pyplot.plot(history.history['val_loss'][:])
 pyplot.title('model train vs validation loss')
 pyplot.ylabel('loss')
 pyplot.xlabel('epoch')
